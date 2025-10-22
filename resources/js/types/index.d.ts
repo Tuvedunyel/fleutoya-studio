@@ -1,6 +1,40 @@
 import { InertiaLinkProps } from '@inertiajs/react';
 import { LucideIcon } from 'lucide-react';
 
+export type PaginatedCollection<T> = {
+    data: T[];
+    links: {
+        first: string;
+        last: string;
+        prev: string | null;
+        next: string | null;
+    };
+    meta: {
+        current_page: number;
+        from: string;
+        last_page: number;
+        path: string;
+        per_page: number;
+        to: number;
+        total: number;
+        links: {
+            url: string | null;
+            label: string;
+            active: boolean;
+        }[];
+    };
+};
+
+export interface Secret {
+    id: number;
+    name: string;
+    message: string;
+    recipient: string;
+    status: 'sent' | 'deleted';
+    title: string;
+    secret: string;
+}
+
 export interface Auth {
     user: User;
 }
@@ -27,6 +61,10 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    flash: {
+        success?: string;
+        error?: string;
+    };
     [key: string]: unknown;
 }
 

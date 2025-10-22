@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('secrets', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('title');
+            $table->string('name');
+            $table->text('message');
+            $table->string('recipient');
+            $table->string('secret');
+            $table->string('status')->default('sent');
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }
