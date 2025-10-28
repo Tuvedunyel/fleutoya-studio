@@ -1,0 +1,115 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # PHP / Composer
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, curl, dom, intl, zip, bcmath, mysql
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer deps (no-dev, optimized)
+        run: composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
+
+      # Node / Vite
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Node
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+
+      # Préparer l’artefact (on n’inclut pas .env ni storage)
+      - name: Create deploy artifact directory
+        run: |
+          mkdir -p deploy
+          rsync -a --delete \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="tests" \
+            --exclude="node_modules" \
+            --exclude="storage" \
+            --exclude=".env" \
+            ./ ./deploy/
+
+      # Déploiement rsync -> VPS (on protège .env et storage/)
+      - name: Rsync to VPS
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude='.env' --exclude='storage/'
+          path: deploy/
+          remote_path: ${{ secrets.DEPLOY_PATH }}/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_port: ${{ secrets.SSH_PORT }}
+          remote_key: ${{ secrets.SSH_KEY }}
+
+      # Post-deploy: migrations, caches, permissions, dossiers manquants
+      - name: Post-deploy tasks (migrate, cache, permissions)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Ne pas écraser .env ; si absent on le crée depuis l'exemple
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              php artisan key:generate --force
+            fi
+
+            # (Re)création des dossiers nécessaires
+            mkdir -p storage/framework/{cache,sessions,views,testing}
+            mkdir -p bootstrap/cache
+
+            # Permissions (adapte l'utilisateur/groupe si besoin : www-data/nginx/apache)
+            chown -R www-data:www-data storage bootstrap/cache
+            chmod -R ug+rwX storage bootstrap/cache
+
+            # Lien storage -> public
+            php artisan storage:link || true
+
+            # Migrations et caches Laravel
+            php artisan migrate --force
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache

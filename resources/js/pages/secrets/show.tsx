@@ -4,14 +4,18 @@ import { Button } from '@/components/ui/button';
 import HomeLayout from '@/layouts/home-layout';
 import secrets from '@/routes/secrets';
 import type { Secret } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
 
 type Props = { collection: { data: Secret }; decryptedSecret: string };
 export default function Show({ collection, decryptedSecret }: Props) {
+    const url = usePage().url;
+    const key = new URLSearchParams(url.split('?')[1]).get('key') ?? '';
     const deleteRef = useRef(null);
+    const action = secrets.update.form(collection.data.id);
     useEffect(() => {
         if (collection.data.status !== 'deleted' && decryptedSecret !== null) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             deleteRef!.current!.click();
         }
@@ -30,12 +34,16 @@ export default function Show({ collection, decryptedSecret }: Props) {
                     content="Studio Fleutoya, site personnel"
                 />
             </Head>
-            <Link
-                ref={deleteRef}
-                href={secrets.edit({ secret: collection.data.id })}
-            >
-                Suppression des données
-            </Link>
+            <Form className="hidden" {...action}>
+                {({ processing }) => (
+                    <>
+                        <input type="hidden" name="key" value={key} />
+                        <Button disabled={processing} ref={deleteRef}>
+                            Suppression des données
+                        </Button>
+                    </>
+                )}
+            </Form>
             <HomeLayout>
                 <Header />
                 <main>

@@ -9,19 +9,19 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { withAppLayout } from '@/layouts/app-layout';
-import secrets from '@/routes/secrets';
-import { BreadcrumbItem, PaginatedCollection, Secret } from '@/types';
+import users from '@/routes/users';
+import { BreadcrumbItem, PaginatedCollection, User } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Plus, Trash } from 'lucide-react';
+import { Edit, Plus, Trash } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Secrets',
-        href: '/secrets',
+        title: 'Users',
+        href: '/users',
     },
 ];
 
-type Props = { collection: PaginatedCollection<Secret> };
+type Props = { collection: PaginatedCollection<User> };
 
 export default withAppLayout(breadcrumbs, ({ collection }: Props) => {
     return (
@@ -40,26 +40,28 @@ export default withAppLayout(breadcrumbs, ({ collection }: Props) => {
                 <TableBody>
                     <TableCell colSpan={5}>
                         <Button asChild variant="outline" className="w-full">
-                            <Link href={secrets.create()}>
+                            <Link href="#">
                                 <Plus />
-                                Envoyer un nouveau secret
+                                Créer un nouvel utilisateur (à venir)
                             </Link>
                         </Button>
                     </TableCell>
                     {collection.data.map((item) => (
                         <TableRow key={item.id}>
                             <TableCell>{item.id}</TableCell>
-                            <TableCell>{item.title}</TableCell>
-                            <TableCell>{item.recipient}</TableCell>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.email}</TableCell>
                             <TableCell>
                                 <Button
                                     variant={
-                                        item.status === 'deleted'
+                                        !item.email_verified_at
                                             ? 'destructive'
                                             : 'outline'
                                     }
                                 >
-                                    {item.status}
+                                    {!item.email_verified_at
+                                        ? 'Not vérified'
+                                        : 'Verified'}
                                 </Button>
                             </TableCell>
                             <TableCell>
@@ -67,15 +69,24 @@ export default withAppLayout(breadcrumbs, ({ collection }: Props) => {
                                     <Button
                                         asChild
                                         size="icon"
+                                        variant="outline"
+                                    >
+                                        <Link href="#">
+                                            <Edit size={16} />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        size="icon"
                                         variant="destructive-outline"
                                     >
                                         <Link
-                                            href={secrets.destroy({
-                                                secret: item.id,
+                                            href={users.destroy({
+                                                user: item.id,
                                             })}
                                             onBefore={() =>
                                                 confirm(
-                                                    'Voulez-vous vraiment supprimer ce secret ?',
+                                                    'Voulez-vous vraiment supprimer ce compte ?',
                                                 )
                                             }
                                         >

@@ -86,6 +86,7 @@ class SecretController extends Controller
      */
     public function show(Secret $secret, Request $request)
     {
+
         if ($secret->status === 'deleted') {
             abort(404, 'Ce secret a déjà été consulté et ne peut plus être affiché.');
         }
@@ -113,6 +114,14 @@ class SecretController extends Controller
      */
     public function edit(Secret $secret, Request $request)
     {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateSecretRequest $request, Secret $secret)
+    {
         if (!$request->has('key')) {
             abort(404, 'Ce secret n\'existe pas.');
         }
@@ -126,22 +135,13 @@ class SecretController extends Controller
         }
 
         $secret->status = 'deleted';
-        $secret->secret = 'This secret has been consumed and it is no longer available.';
+        $secret->secret = 'Ce secret a déjà été consulté et ne peut plus être affiché.';
         $secret->save();
 
         return Inertia::render('secrets/show', [
-            'secret' => new SecretResource($secret),
+            'collection' => new SecretResource($secret),
             'decryptedSecret' => $decryptedSecret,
         ]);
-
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateSecretRequest $request, Secret $secret)
-    {
-        //
     }
 
     /**
@@ -150,6 +150,6 @@ class SecretController extends Controller
     public function destroy(Secret $secret)
     {
         $secret->delete();
-        return to_route('secrets . index')->with('success', 'Le secret a été supprimé . ');
+        return to_route('secrets.index')->with('success', 'Le secret a été supprimé . ');
     }
 }
