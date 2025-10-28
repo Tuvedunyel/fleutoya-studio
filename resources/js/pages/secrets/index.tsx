@@ -31,9 +31,9 @@ export default withAppLayout(breadcrumbs, ({ collection }: Props) => {
                 <TableHeader>
                     <TableRow>
                         <TableHead>ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Recipient</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Titre</TableHead>
+                        <TableHead>Destinataire</TableHead>
+                        <TableHead>Statut</TableHead>
                         <TableHead>Actions</TableHead>
                     </TableRow>
                 </TableHeader>
